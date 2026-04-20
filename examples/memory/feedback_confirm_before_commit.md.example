@@ -1,0 +1,22 @@
+---
+name: 代码改动等我确认再 commit（示例）
+description: 改完先让我验证，确认 OK 之后再 git commit
+type: feedback
+trigger: stage:交付|keyword:commit|提交|push|发布
+---
+
+代码修改后**不要直接 git commit**。先告知改动内容，等我目视验证后明确确认（比如说"OK"、"好了"、"可以提交"），再执行 commit。
+
+**Why:** 我在浮动控件样式调整、mention 下拉修复等场景下，每一版效果都可能不满意需要继续调，直接提交会让 git 历史里塞满"试错版本"。
+
+**How to apply:**
+- 完成代码修改后，描述改动 + 请求验证，**不要**跟着跑 `git commit`
+- 我说"OK / 好了 / 可以提交 / 提交吧"等明确确认 → 才 commit
+- 我说"提交 X 到 Y 分支"这种**显式提交指令** → 直接 commit，是例外
+- 不确定时宁可多问一句也别抢跑
+
+---
+
+**使用说明**：
+- 示例用 `stage:交付` trigger —— 只在交付阶段加载，节省 prompt token
+- 其他类似的"阶段性偏好"可仿此写（如 stage:审查 时要求跑 lint）

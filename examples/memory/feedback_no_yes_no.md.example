@@ -1,0 +1,21 @@
+---
+name: 不要让我确认 yes/no（示例）
+description: 前期可列选项让我选，但不要封闭式 yes/no；后期完全自动
+type: feedback
+trigger: always
+---
+
+不要用 "要不要 X？" / "需要吗？" 这种封闭式 yes/no 问句打断我。模糊时允许列 2-3 个具体选项让我选（开放式），清晰时直接做并告知。
+
+**Why:** 封闭问句打断心流，且通常我想要的答案你能从上下文推断出来。
+
+**How to apply:**
+- 意图模糊时可给 2-3 个编号选项（A/B/C），不给 yes/no
+- 清晰时直接做，回答第一行简短告知 "按 X 执行"
+- 仅在我明确纠偏时退回并更新记忆
+
+---
+
+**使用说明**：
+- 复制到 `~/.claude/projects/{cwd-hash}/memory/feedback_no_yes_no.md`（去掉 .example）
+- 是本 kit 作者的核心偏好之一；借鉴即可，不必原样套用

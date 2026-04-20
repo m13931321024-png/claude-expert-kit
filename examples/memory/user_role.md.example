@@ -1,0 +1,23 @@
+---
+name: 用户角色（示例）
+description: 告诉助手你是谁、做什么、用什么语言/框架
+type: user
+trigger: always
+---
+
+我是一名 XX 工程师，主要工作领域是 YY（例：前端 Angular 项目、后端 Go 微服务、数据分析 Python）。
+
+当前在做 ZZ 方向的事（例：对接后端 API、重构遗留代码、学习新框架）。
+
+**我的技术栈**: TypeScript, Angular, ...
+
+**我的偏好**:
+- 简洁代码，少抽象
+- 不写注释除非 "why" 非显然
+- 重命名变量名比加注释优先
+
+---
+
+**使用说明**：
+- 复制到 `~/.claude/projects/{cwd-hash}/memory/user_role.md` 并改内容
+- 帮助助手快速建立对你的画像，避免每次对话重述背景

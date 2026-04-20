@@ -1,0 +1,22 @@
+# Memory Index
+
+> 每条记忆的 `trigger` 标注何时 Read 详细内容。语义详见 `~/.claude/experts/shared/memory-trigger-convention.md`。
+
+## 按 trigger 分组
+
+### always（每轮必读/必遵守）
+<!-- 你的核心身份、强行为约束放这里。示例：-->
+<!-- - [user_role.md](user_role.md) — 用户身份：xxx -->
+<!-- - [feedback_no_yes_no.md](feedback_no_yes_no.md) — 不问 yes/no -->
+
+### keyword 触发
+<!-- 特定话题才相关的偏好。示例：-->
+<!-- - [feedback_commit_confirm.md](feedback_commit_confirm.md) — `commit|提交|push` → 等用户确认 -->
+
+### project 触发
+<!-- 某个项目特有的约束。示例：-->
+<!-- - [project_xxx.md](project_xxx.md) — cwd 含 `xxx-project` -->
+
+### stage 触发
+<!-- 某个专家阶段才相关的偏好。示例：-->
+<!-- - [feedback_progress_table.md](feedback_progress_table.md) — stage:开发|stage:交付 -->
