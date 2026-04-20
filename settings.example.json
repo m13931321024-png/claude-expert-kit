@@ -1,0 +1,34 @@
+{
+  "$comment": "复制到 ~/.claude/settings.json 按需改。install.sh 首次安装会自动 seed。",
+  "env": {},
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/hooks/expert-router/router.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/hooks/context-monitor/context-monitor.sh",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Write(**/.claude/**)",
+      "Edit(**/.claude/**)",
+      "Write(**/handoff.md)",
+      "Edit(**/handoff.md)",
+      "Write(**/learnings/**)",
+      "Edit(**/learnings/**)"
+    ]
+  }
+}

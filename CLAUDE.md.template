@@ -1,0 +1,22 @@
+# Global CLAUDE.md
+
+此文件每次会话自动加载，定义全局行为约束和知识沉淀。
+
+## 你的角色定义（可选）
+
+<!-- 例：前端工程师，主语言 TypeScript + Angular / React。偏好函数式、简洁代码。-->
+
+## 通用偏好
+
+- 对比类输出用表格，不要段落文字
+- 代码改动前确认，不要自动 commit
+- 不要问 yes/no 封闭问题（给选项或直接做）
+- 权限弹窗尽量少打扰
+
+## Harness（自动追加）
+
+跨项目错误/经验沉淀。由 brainstorming 流程在用户确认后追加。格式：
+
+- [YYYY-MM-DD] 场景: xxx。根因: yyy。预防: zzz。
+
+<!-- harness-entries-below -->

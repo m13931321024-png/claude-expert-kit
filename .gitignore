@@ -1,0 +1,36 @@
+# private user state — never commit
+.claude/projects/
+.claude/sessions/
+.claude/history.jsonl
+.claude/stats-cache.json
+.claude/telemetry/
+.claude/cache/
+.claude/paste-cache/
+.claude/session-env/
+.claude/shell-snapshots/
+.claude/todos/
+.claude/downloads/
+.claude/file-history/
+.claude/settings.local.json
+.claude/experts/handoff.md
+.claude/experts/learnings/
+
+# personal memory (never commit)
+**/memory/user_*.md
+**/memory/feedback_*.md
+**/memory/project_*.md
+!examples/memory/**  # 允许 examples/memory/ 里的脱敏示例
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# env
+.env
+.env.local
