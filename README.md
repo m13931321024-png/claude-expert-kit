@@ -8,13 +8,22 @@
 
 ---
 
-## ⚡ 一句话安装 / 卸载
+## Install
 
-**安装**：
+**一键安装**（推荐）：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/m13931321024-png/claude-expert-kit/main/install.sh | bash
 ```
+
+自动做了 7 件事：
+1. 检查依赖（git / bash / python3）
+2. clone 到 `~/.claude-expert-kit/`
+3. 备份已有 `~/.claude/` → `~/.claude.backup-{stamp}/`
+4. 把 6 专家 / hooks / shared 经验 **symlink** 到 `~/.claude/`
+5. 首次安装 seed `CLAUDE.md` 和 `settings.json`（已有则跳过）
+6. 安装 wrapper（免权限弹窗）
+7. 跑 doctor 体检
 
 **卸载**：
 
@@ -22,19 +31,39 @@ curl -fsSL https://raw.githubusercontent.com/m13931321024-png/claude-expert-kit/
 curl -fsSL https://raw.githubusercontent.com/m13931321024-png/claude-expert-kit/main/uninstall.sh | bash
 ```
 
-> ⚠️ **Security Notice** — `curl | bash` 要求你信任上游仓库。如果你不熟悉作者：
-> - 推荐先 clone 审阅脚本再跑（见 [Option C](#option-c-本地-clone-后装)）
-> - 核对文件来自 `github.com/m13931321024-png/claude-expert-kit`，而不是被劫持的 URL
-> - 不要用环境变量 `KIT_REPO=任意地址` 除非你审查过那个 repo
->
-> **Fork 后自定义**：把上面 URL 里的 `m13931321024-png` 换成你的 GitHub username；README / install.sh / uninstall.sh 里的 URL 也要同步改（或使用 `KIT_REPO` 环境变量，见 [Option D](#option-d-自定义-fork--安装)）。
-
-或本地（已 clone 后）：
+**本地已 clone 后**：
 
 ```bash
 bash ~/.claude-expert-kit/install.sh     # 装
 bash ~/.claude-expert-kit/uninstall.sh   # 拆
 bash ~/.claude-expert-kit/doctor.sh      # 体检
+```
+
+> ⚠️ **Security Notice** — `curl | bash` 要求你信任上游仓库。如果你不熟悉作者：
+> - 推荐先 clone 审阅脚本再跑（见 [Option: 本地 clone](#option-本地-clone-后装)）
+> - 核对文件来自 `github.com/m13931321024-png/claude-expert-kit`，而不是被劫持的 URL
+> - 不要用环境变量 `KIT_REPO=任意地址` 除非你审查过那个 repo
+>
+> **Fork 后自定义**：把上面 URL 里的 `m13931321024-png` 换成你的 GitHub username；README / install.sh / uninstall.sh 里的 URL 也要同步改（或使用 `KIT_REPO` 环境变量，见 [Option: 自定义 Fork](#option-自定义-fork--安装)）。
+
+### Option: 预览模式（不真改）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/m13931321024-png/claude-expert-kit/main/install.sh | DRY_RUN=1 bash
+```
+
+### Option: 本地 clone 后装
+
+```bash
+git clone https://github.com/m13931321024-png/claude-expert-kit.git ~/.claude-expert-kit
+bash ~/.claude-expert-kit/install.sh
+```
+
+### Option: 自定义 Fork + 安装
+
+```bash
+KIT_REPO="https://github.com/YOUR-USERNAME/claude-expert-kit.git" \
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/YOUR-USERNAME/claude-expert-kit/main/install.sh)"
 ```
 
 ---
@@ -53,45 +82,6 @@ bash ~/.claude-expert-kit/doctor.sh      # 体检
 | **LaunchAgent 自愈** | CC 升级覆盖 wrapper → 5 分钟内自动恢复 |
 | **Playwright MCP** 自动 UI 验证 | Agent 用 a11y tree 操纵浏览器做回归 |
 | **一键备份** | 每次大改前 10 秒 tar 备份 |
-
----
-
-## Install Options
-
-### Option A: 远程一行安装（推荐）
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/m13931321024-png/claude-expert-kit/main/install.sh | bash
-```
-
-自动：
-1. 检查依赖（git / bash / python3）
-2. clone 到 `~/.claude-expert-kit/`
-3. 备份已有 `~/.claude/` → `~/.claude.backup-{stamp}/`
-4. 把 6 专家 / hooks / shared 经验 **symlink** 到 `~/.claude/`
-5. 首次安装 seed `CLAUDE.md` 和 `settings.json`（已有则跳过）
-6. 安装 wrapper（免权限弹窗）
-7. 跑 doctor 体检
-
-### Option B: 预览模式（不真改）
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/m13931321024-png/claude-expert-kit/main/install.sh | DRY_RUN=1 bash
-```
-
-### Option C: 本地 clone 后装
-
-```bash
-git clone https://github.com/m13931321024-png/claude-expert-kit.git ~/.claude-expert-kit
-bash ~/.claude-expert-kit/install.sh
-```
-
-### Option D: 自定义 Fork + 安装
-
-```bash
-KIT_REPO="https://github.com/YOUR-USERNAME/claude-expert-kit.git" \
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/YOUR-USERNAME/claude-expert-kit/main/install.sh)"
-```
 
 ---
 
@@ -229,7 +219,7 @@ claude-expert-kit/
 │   └── com.cc.claude-wrapper-self-heal.plist   # macOS LaunchAgent
 ├── examples/memory/             # 脱敏的 memory 示例
 └── docs/
-    └── introduction.md          # 完整设计哲学 + 从零搭建指南
+    └── introduction.md          # 设计哲学 + 架构总览
 ```
 
 ---
