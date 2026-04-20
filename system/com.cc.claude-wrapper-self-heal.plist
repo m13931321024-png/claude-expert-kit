@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- macOS LaunchAgent: 每 5 分钟检测 wrapper 是否被 CC 升级覆盖，覆盖则重装 -->
+<!-- 安装：
+  cp system/com.cc.claude-wrapper-self-heal.plist ~/Library/LaunchAgents/
+  sed -i '' "s|__HOME__|$HOME|g" ~/Library/LaunchAgents/com.cc.claude-wrapper-self-heal.plist
+  launchctl load ~/Library/LaunchAgents/com.cc.claude-wrapper-self-heal.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cc.claude-wrapper-self-heal</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__HOME__/.local/bin/claude-wrapper-install.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/claude-wrapper-heal.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/claude-wrapper-heal.err</string>
+</dict>
+</plist>
