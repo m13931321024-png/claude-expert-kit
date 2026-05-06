@@ -9,11 +9,10 @@
 | `name` | ✅ | string | 唯一 ID，格式 `namespace:slug`，如 `experts:开发` |
 | `type` | ✅ | enum | `expert` / `internal` / `tool` |
 | `description` | ✅ | string ≤200 | 一句话描述（CC 注入到 system prompt） |
-| `triggers` | ❌ | string\|array | 关键词（pipe 分隔字符串或数组）— hook 路由读 |
 | `priority` | ❌ | enum | `high` / `medium` / `low`，默认 medium |
 | `chain` | ❌ | array | 后继 expert 列表（仅 `type:expert` 有效） |
 | `calls` | ❌ | array | 内部按需调用的 SlashCommand 列表 |
-| `keywords` | ❌ | array | 检索关键词（V3 embedding 用） |
+| `keywords` | ❌ | array | **路由关键词单一来源**：hook 字面匹配 + V3 embedding 都用它（v0.2.1 起合并 `triggers` 字段）|
 | `version` | ❌ | semver | 默认 `0.1.0` |
 | `platforms` | ❌ | array | 目标平台，默认 `[claude-code]` |
 | `maintainer` | ❌ | string | 维护者标识 |
@@ -41,11 +40,10 @@
 name: experts:开发
 type: expert
 description: 编码实现专家 — 多 Agent 并行开发，Agentless 修 bug 三段式
-triggers: 开发|实现|编码|修bug|报错|崩溃|重构|性能
 priority: high
 chain: [experts:审查, experts:交付, experts:复盘]
 calls: [_internal:autoresearch]
-keywords: [编码, 多Agent, 修bug]
+keywords: [开发, 实现, 编码, 修bug, 报错, 崩溃, 重构, 性能, 多Agent]
 version: 0.2.0
 platforms: [claude-code]
 maintainer: 加州
@@ -63,6 +61,7 @@ maintainer: 加州
 3. name 符合 `namespace:slug` 格式
 4. chain / calls 引用的 skill 在仓库内真实存在
 5. description 长度（>200 警告，sync 时截断）
+6. keywords 是**路由命中的唯一字段**（hook 用它做字面匹配；V3 embedding 也用它）
 
 ## 渲染产物（claude-code target）
 

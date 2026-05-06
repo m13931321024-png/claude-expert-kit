@@ -74,7 +74,8 @@ while IFS= read -r src; do
     continue
   fi
 
-  # build canonical frontmatter: merge with v0.2 defaults
+  # build canonical frontmatter: merge with v0.2.1 defaults
+  # v0.2.1: triggers field deprecated; merge into keywords + drop triggers
   canonical_json=$(echo "$src_json" | jq '
     . + {
       type: (.type // "expert"),
@@ -82,8 +83,14 @@ while IFS= read -r src; do
       platforms: (.platforms // ["claude-code"]),
       chain: (.chain // []),
       calls: (.calls // []),
-      keywords: (.keywords // [])
-    }
+      keywords: (
+        (.keywords // []) +
+        (if (.triggers // null) | type == "string" then ((.triggers // "") | split("|") | map(select(length > 0)))
+         elif (.triggers // null) | type == "array" then .triggers
+         else [] end)
+        | unique
+      )
+    } | del(.triggers)
   ')
 
   if [[ -f "$target" ]]; then

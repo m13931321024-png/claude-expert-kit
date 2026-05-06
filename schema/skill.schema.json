@@ -21,12 +21,6 @@
       "maxLength": 200,
       "description": "One-liner shown to the agent (CC injects this into system prompt)"
     },
-    "triggers": {
-      "oneOf": [
-        { "type": "string", "description": "pipe-separated: 'kw1|kw2|kw3'" },
-        { "type": "array", "items": { "type": "string" } }
-      ]
-    },
     "priority": {
       "type": "string",
       "enum": ["high", "medium", "low"],
@@ -45,7 +39,7 @@
     "keywords": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Semantic search hints (V3 embedding)"
+      "description": "Single source of truth for routing: hook does literal matching against this list; V3 embedding will use the same field. Replaced the old 'triggers' field (v0.2.1)."
     },
     "version": {
       "type": "string",

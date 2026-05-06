@@ -33,13 +33,15 @@ echo
 jq -r '.experts[] | "- /\(.name) (priority: \(.priority // "medium"), triggers: \(.triggers | join(",")))"' "$ROUTER_JSON" 2>/dev/null
 
 # 2. 关键词命中强制路由
+# v0.2.1：路由用 router.json 的 keywords 字段（单一来源，由 sync 从 SKILL frontmatter keywords 生成）
 # 归一化用户输入：去掉空格/制表符，让 "修个 bug" 也能命中 "修bug"
 normalized_input=$(echo "$USER_INPUT" | tr -d ' \t')
 
 matched=""
 while IFS= read -r line; do
   expert=$(echo "$line" | jq -r '.name')
-  triggers=$(echo "$line" | jq -r '.triggers[]')
+  # 兼容：先 keywords，没有 fallback 到 triggers（旧 router.json）
+  keywords=$(echo "$line" | jq -r '(.keywords // .triggers // [])[]?')
   while IFS= read -r kw; do
     [[ -z "$kw" ]] && continue
     # 字面匹配（-F）+ 大小写不敏感（-i），归一化后查 kw（也归一化）
@@ -48,7 +50,7 @@ while IFS= read -r line; do
       matched="$expert"
       break 2
     fi
-  done <<< "$triggers"
+  done <<< "$keywords"
 done < <(jq -c '.experts[]' "$ROUTER_JSON")
 
 if [[ -n "$matched" ]]; then

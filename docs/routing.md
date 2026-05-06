@@ -10,7 +10,7 @@ agent 不会主动调 `experts:*` skill。靠 description 注入 system prompt �
 
 1. 用户输入抵达 hook（stdin）
 2. hook 读 `~/.claude/hooks/expert-router/router.json`（由 `skillctl sync` 生成）
-3. 关键词扫描：用户输入命中任一 expert 的 `triggers` 列表
+3. 关键词扫描：用户输入命中任一 expert 的 `keywords` 列表
 4. 命中 → stdout 注入 `必须先调 Skill: experts:<name>`，agent 看到强制路由
 5. 同时注入该 expert 的 `chain` 提示，方便链式自动流转
 
@@ -46,11 +46,11 @@ skillctl sync
 ## 强制路由是否会"误判"
 
 会。误判风险来自：
-- triggers 词过于通用（如 `"修"` 命中 `"修改文档措辞"` 这类非 bug 任务）
-- 多 expert triggers 重叠（hook 取**第一个命中**，可能不是最合适的）
+- keywords 词过于通用（如 `"修"` 命中 `"修改文档措辞"` 这类非 bug 任务）
+- 多 expert keywords 重叠（hook 取**第一个命中**，可能不是最合适的）
 
 **缓解**：
-1. triggers 列表越具体越好（`修bug` 优于 `修`）
+1. keywords 列表越具体越好（`修bug` 优于 `修`）
 2. 优先级（priority）= high 的 expert 排在前面
 3. 用户明确不需要专家时输入"闲聊：xxx"绕开（hook 检测到`闲聊：` 前缀跳过）— V3 加
 

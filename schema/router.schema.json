@@ -11,11 +11,11 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "triggers"],
+        "required": ["name", "keywords"],
         "additionalProperties": false,
         "properties": {
           "name": { "type": "string" },
-          "triggers": { "type": "array", "items": { "type": "string" } },
+          "keywords": { "type": "array", "items": { "type": "string" } },
           "priority": { "type": "string", "enum": ["high", "medium", "low"] },
           "chain": { "type": "array", "items": { "type": "string" } },
           "calls": { "type": "array", "items": { "type": "string" } }

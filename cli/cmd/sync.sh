@@ -91,13 +91,17 @@ while IFS= read -r f; do
   fi
 
   if [[ "$type" == "expert" ]]; then
+    # router uses keywords field as single source of truth (v0.2.1)
+    # legacy: if frontmatter still has 'triggers', merge them in for backward compat
     entry=$(echo "$json" | jq -c '{
       name,
       priority: (.priority // "medium"),
-      triggers: (
-        if (.triggers | type) == "string" then (.triggers | split("|"))
-        elif (.triggers | type) == "array" then .triggers
-        else [] end
+      keywords: (
+        (.keywords // []) +
+        (if (.triggers // null) | type == "string" then ((.triggers // "") | split("|") | map(select(length > 0)))
+         elif (.triggers // null) | type == "array" then .triggers
+         else [] end)
+        | unique
       ),
       chain: (.chain // []),
       calls: (.calls // [])
