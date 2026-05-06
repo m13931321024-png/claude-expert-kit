@@ -25,6 +25,7 @@ COMMANDS:
   link       Symlink skills repo into ~/.claude (P1)
   chain      Visualize expert chain DAG (P1)
   migrate    Migrate v0.1 commands/experts/*.md to canonical (P0)
+  trace2skill Extract transcript data for agent skill-upgrade analysis (v0.3)
 
 GLOBAL OPTIONS:
   -h, --help        Show help
@@ -63,7 +64,7 @@ if [[ ! -f "$script" ]]; then
 fi
 
 case "$cmd" in
-  sync|lint|migrate|chain) check_deps yq jq ;;
+  sync|lint|migrate|chain|trace2skill) check_deps yq jq ;;
 esac
 
 exec bash "$script" "$@"
