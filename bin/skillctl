@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# skillctl - Canonical Skill manager for claude-expert-kit v0.2
+set -euo pipefail
+
+SKILLCTL_VERSION="0.2.0-alpha"
+SKILLCTL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export SKILLCTL_ROOT SKILLCTL_VERSION
+
+# shellcheck source=../cli/lib/common.sh
+source "$SKILLCTL_ROOT/cli/lib/common.sh"
+
+usage() {
+  cat <<EOF
+skillctl ${SKILLCTL_VERSION}  -  Canonical Skill manager
+
+USAGE:
+  skillctl <command> [options]
+
+COMMANDS:
+  init       Initialize a private skills repository
+  sync       Render canonical skills to claude-code (and other) targets
+  pull       git pull + auto-sync
+  push       git add + commit + push
+  lint       Validate canonical skill files against schema
+  link       Symlink skills repo into ~/.claude (P1)
+  chain      Visualize expert chain DAG (P1)
+  migrate    Migrate v0.1 commands/experts/*.md to canonical (P0)
+
+GLOBAL OPTIONS:
+  -h, --help        Show help
+  -V, --version     Show version
+  -q, --quiet       Suppress non-error output
+  -v, --verbose     Enable verbose logs
+      --no-color    Disable colored output
+
+Run 'skillctl <command> --help' for command details.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    -V|--version) echo "skillctl ${SKILLCTL_VERSION}"; exit 0 ;;
+    -q|--quiet) export SKILLCTL_QUIET=1; shift ;;
+    -v|--verbose) export SKILLCTL_VERBOSE=1; shift ;;
+    --no-color) export SKILLCTL_NO_COLOR=1; shift ;;
+    -*) err "unknown global option: $1"; exit 1 ;;
+    *) break ;;
+  esac
+done
+
+if [[ $# -eq 0 ]]; then
+  usage; exit 1
+fi
+
+cmd="$1"; shift
+script="$SKILLCTL_ROOT/cli/cmd/${cmd}.sh"
+
+if [[ ! -f "$script" ]]; then
+  err "unknown command: $cmd"
+  echo "run 'skillctl --help' for available commands" >&2
+  exit 1
+fi
+
+case "$cmd" in
+  sync|lint|migrate|chain) check_deps yq jq ;;
+esac
+
+exec bash "$script" "$@"
