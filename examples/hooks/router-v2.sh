@@ -33,31 +33,65 @@ echo
 jq -r '.experts[] | "- /\(.name) (priority: \(.priority // "medium"), triggers: \(.triggers | join(",")))"' "$ROUTER_JSON" 2>/dev/null
 
 # 2. 关键词命中强制路由
-# v0.2.1：路由用 router.json 的 keywords 字段（单一来源，由 sync 从 SKILL frontmatter keywords 生成）
-# 归一化用户输入：去掉空格/制表符，让 "修个 bug" 也能命中 "修bug"
-normalized_input=$(echo "$USER_INPUT" | tr -d ' \t')
+# v0.2.1：路由用 router.json 的 keywords 字段（单一来源）
+# v0.3：加 fuzzy 子序列匹配 — "加个新功能" 也能命中 "加功能" / "新功能"
+normalized_input=$(echo "$USER_INPUT" | tr -d ' \t' | tr '[:upper:]' '[:lower:]')
+
+# 子序列匹配：kw 中字符按顺序出现在 input 即算命中
+# 例：kw="加功能" + input="加个新功能" → 顺序找 加→功→能 → 命中
+fuzzy_match() {
+  local kw="$1" input="$2"
+  local i=0 j=0 kw_len=${#kw} in_len=${#input}
+  [[ $kw_len -eq 0 ]] && return 1
+  while [[ $i -lt $in_len && $j -lt $kw_len ]]; do
+    if [[ "${input:$i:1}" == "${kw:$j:1}" ]]; then
+      j=$((j+1))
+    fi
+    i=$((i+1))
+  done
+  [[ $j -eq $kw_len ]]
+}
 
 matched=""
+match_kind=""
+# 第一轮：字面匹配（精度高）
 while IFS= read -r line; do
   expert=$(echo "$line" | jq -r '.name')
-  # 兼容：先 keywords，没有 fallback 到 triggers（旧 router.json）
   keywords=$(echo "$line" | jq -r '(.keywords // .triggers // [])[]?')
   while IFS= read -r kw; do
     [[ -z "$kw" ]] && continue
-    # 字面匹配（-F）+ 大小写不敏感（-i），归一化后查 kw（也归一化）
-    kw_norm=$(echo "$kw" | tr -d ' \t')
-    if echo "$normalized_input" | grep -qiF "$kw_norm"; then
+    kw_norm=$(echo "$kw" | tr -d ' \t' | tr '[:upper:]' '[:lower:]')
+    if echo "$normalized_input" | grep -qF "$kw_norm"; then
       matched="$expert"
+      match_kind="literal"
       break 2
     fi
   done <<< "$keywords"
 done < <(jq -c '.experts[]' "$ROUTER_JSON")
 
+# 第二轮：子序列 fuzzy 匹配（仅在字面无命中时；要求 kw 长度 ≥3 防误判）
+if [[ -z "$matched" ]]; then
+  while IFS= read -r line; do
+    expert=$(echo "$line" | jq -r '.name')
+    keywords=$(echo "$line" | jq -r '(.keywords // .triggers // [])[]?')
+    while IFS= read -r kw; do
+      [[ -z "$kw" ]] && continue
+      kw_norm=$(echo "$kw" | tr -d ' \t' | tr '[:upper:]' '[:lower:]')
+      [[ ${#kw_norm} -lt 3 ]] && continue
+      if fuzzy_match "$kw_norm" "$normalized_input"; then
+        matched="$expert"
+        match_kind="fuzzy"
+        break 2
+      fi
+    done <<< "$keywords"
+  done < <(jq -c '.experts[]' "$ROUTER_JSON")
+fi
+
 if [[ -n "$matched" ]]; then
   echo
   echo "## 🎯 强制路由"
   echo
-  echo "本次输入命中 \`$matched\` 的 trigger，**必须**先调 \`Skill\` tool 触发它："
+  echo "本次输入命中 \`$matched\` 的 keyword（${match_kind}），**必须**先调 \`Skill\` tool 触发它："
   echo "\`\`\`"
   echo "Skill: $matched"
   echo "\`\`\`"

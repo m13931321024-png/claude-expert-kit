@@ -47,9 +47,18 @@ case "$cmd" in
     f=$(find_file_for "$target")
     [[ -z "$f" ]] && { err "expert not found: $target"; exit 1; }
 
+    # visited set 去重：每个 expert 最多展开一次（avoid chain DAG 多路径重复）
+    # bash 3.2 兼容：用字符串而不是 declare -A
+    VISITED=""
+
     print_tree() {
       local name="$1" prefix="$2" depth="$3"
       [[ $depth -gt 6 ]] && { echo "${prefix}... (max depth)"; return; }
+      if echo "$VISITED" | grep -qF "|$name|"; then
+        echo "${prefix}${name} (已展开过，省略子树)"
+        return
+      fi
+      VISITED="${VISITED}|$name|"
       echo "${prefix}${name}"
       local cf
       cf=$(find_file_for "$name")

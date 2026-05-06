@@ -26,6 +26,7 @@ COMMANDS:
   chain      Visualize expert chain DAG (P1)
   migrate    Migrate v0.1 commands/experts/*.md to canonical (P0)
   trace2skill Extract transcript data for agent skill-upgrade analysis (v0.3)
+  status     Show expert call coverage from recent transcripts (v0.3)
 
 GLOBAL OPTIONS:
   -h, --help        Show help
@@ -65,6 +66,7 @@ fi
 
 case "$cmd" in
   sync|lint|migrate|chain|trace2skill) check_deps yq jq ;;
+  status) check_deps jq ;;
 esac
 
 exec bash "$script" "$@"

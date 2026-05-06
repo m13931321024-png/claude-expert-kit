@@ -34,7 +34,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ "$TARGET" == "claude-code" ]] || die "sync: target '$TARGET' not yet supported (V2)" 1
+case "$TARGET" in
+  claude-code|codex) : ;;
+  *) die "sync: unsupported target '$TARGET' (use claude-code or codex)" 1 ;;
+esac
 [[ -d "$SKILLS_REPO_DEFAULT" ]] || die "skills repo not found: $SKILLS_REPO_DEFAULT (run 'skillctl init')" 1
 
 log "running lint..."
@@ -74,20 +77,40 @@ while IFS= read -r f; do
     } | with_entries(select(.value != null))
   ' | yq eval -P - 2>/dev/null)
 
-  if [[ $DRY_RUN -eq 1 ]]; then
-    log "[dry-run] $cmd_file"
-    log "[dry-run] $skill_file"
-  else
-    mkdir -p "$cmd_dir" "$skill_dir"
-    {
-      echo "---"
-      echo "$cc_fm"
-      echo "---"
-      echo
-      echo "$body"
-    } > "$cmd_file"
-    cp "$cmd_file" "$skill_file"
-    debug "wrote $cmd_file + $skill_file"
+  if [[ "$TARGET" == "claude-code" ]]; then
+    if [[ $DRY_RUN -eq 1 ]]; then
+      log "[dry-run] $cmd_file"
+      log "[dry-run] $skill_file"
+    else
+      mkdir -p "$cmd_dir" "$skill_dir"
+      {
+        echo "---"
+        echo "$cc_fm"
+        echo "---"
+        echo
+        echo "$body"
+      } > "$cmd_file"
+      cp "$cmd_file" "$skill_file"
+      debug "wrote $cmd_file + $skill_file"
+    fi
+  elif [[ "$TARGET" == "codex" ]]; then
+    # Codex adapter (alpha): canonical → ~/.codex/agents/<ns>/<slug>.md
+    # 仅渲染 name + description + body（Codex 无 Skill / SlashCommand 之分）
+    codex_dir="${CODEX_AGENTS_DIR:-$HOME/.codex/agents}/$ns"
+    codex_file="$codex_dir/${slug}.md"
+    if [[ $DRY_RUN -eq 1 ]]; then
+      log "[dry-run] $codex_file"
+    else
+      mkdir -p "$codex_dir"
+      {
+        echo "# $name"
+        echo
+        echo "> $desc"
+        echo
+        echo "$body"
+      } > "$codex_file"
+      debug "wrote $codex_file (codex adapter alpha)"
+    fi
   fi
 
   if [[ "$type" == "expert" ]]; then
