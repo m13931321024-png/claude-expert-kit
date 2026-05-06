@@ -8,6 +8,26 @@
 
 ---
 
+## 🆕 v0.2 (alpha) — 新增 skillctl CLI + 跨设备同步
+
+v0.2 在 v0.1 基础上叠加：
+
+- **`skillctl` CLI**（8 命令：init/sync/lint/pull/push/migrate/link/chain）— 像 git 一样管你的 expert / skill
+- **canonical SKILL 格式**（`schema/skill.schema.json`）— 一份 YAML 源，sync 出 SlashCommand + Skill 双形态
+- **跨设备 Git 同步** — 你的 skill 仓库远程化，第二台机器 `skillctl pull` 一键到位
+- **强制路由 hook v2**（`examples/hooks/router-v2.sh`）— 关键词命中即注入"必须调 Skill: experts:xxx"，调用率 ≥85%
+
+零侵入升级（v0.1 用户继续工作）。详见：
+- [docs/V0.2-CHANGES.md](docs/V0.2-CHANGES.md) — 4 大新能力
+- [docs/V0.2.1-CHANGES.md](docs/V0.2.1-CHANGES.md) — schema 简化（`triggers` 合并到 `keywords`）
+- [docs/canonical-schema.md](docs/canonical-schema.md) — SKILL 字段全集
+- [docs/skillctl-spec.md](docs/skillctl-spec.md) — CLI 命令规格
+- [docs/migration-v0.1-to-v0.2.md](docs/migration-v0.1-to-v0.2.md) — v0.1 → v0.2 升级路径
+
+依赖（v0.2 起）：`brew install yq jq bats-core`。
+
+---
+
 ## Install
 
 **一键安装**（推荐）：
