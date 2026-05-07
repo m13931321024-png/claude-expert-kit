@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, open, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { homedir } from "node:os";
 import yaml from "js-yaml";
@@ -229,8 +229,16 @@ export function invalidateSkillCache(path: string): void {
 
 const SKILL_NAME_RE = /^[a-z0-9][a-z0-9_-]*$/;
 const HOME = homedir();
-const TRASH_ROOT = join(HOME, ".skillctl/trash");
-const GLOBAL_SKILL_ROOT = join(HOME, ".claude/skills");
+// Env vars CEK_TRASH_ROOT / CEK_GLOBAL_SKILL_ROOT redirect roots for tests (and
+// optionally advanced production setups). All callers — resolveSkillDir, deleteSkill,
+// AND the sidecar's buildAllowedRoots / buildSources — must go through these getters
+// so create / list / update / delete agree on the same path.
+export function getTrashRoot(): string {
+  return process.env.CEK_TRASH_ROOT ?? join(HOME, ".skillctl/trash");
+}
+export function getGlobalSkillRoot(): string {
+  return process.env.CEK_GLOBAL_SKILL_ROOT ?? join(HOME, ".claude/skills");
+}
 
 export function validateSkillName(name: string): string | null {
   if (typeof name !== "string" || name.length === 0) return "name required";
@@ -252,7 +260,7 @@ export function resolveSkillDir(
 ): { dir: string; file: string } {
   const root = scope === "project"
     ? (projectRoot === undefined ? "" : join(projectRoot, ".claude/skills"))
-    : GLOBAL_SKILL_ROOT;
+    : getGlobalSkillRoot();
   if (root === "") throw new Error("project scope requires projectRoot");
   const dir = resolve(root, name);
   if (!isUnder(dir, root)) throw new Error("path traversal blocked");
@@ -345,7 +353,19 @@ export async function updateSkill(
   if (req.keywords !== undefined) baseMeta.keywords = req.keywords;
   const body = req.body ?? existing.body;
   const content = serializeSkillFile(baseMeta, body);
-  await writeFile(existing.path, content, "utf8");
+  let fh;
+  try {
+    fh = await open(existing.path, "r+");
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") throw new Error("not_found");
+    throw e;
+  }
+  try {
+    await fh.truncate(0);
+    await fh.writeFile(content, "utf8");
+  } finally {
+    await fh.close();
+  }
   invalidateSkillCache(existing.path);
   const out: SkillWriteResult = {
     name: existing.name,
@@ -485,9 +505,15 @@ export async function deleteSkill(
   const safeProject = (existing.projectName ?? "global").replace(/[^a-zA-Z0-9_-]/g, "_");
   const leaf = isFlat ? `${existing.scope}__${safeProject}__${existing.name}.md`
     : `${existing.scope}__${safeProject}__${existing.name}`;
-  const trashDest = join(TRASH_ROOT, stamp, leaf);
+  const trashDest = join(getTrashRoot(), stamp, leaf);
   await mkdir(dirname(trashDest), { recursive: true });
-  await rename(moveSrc, trashDest);
+  try {
+    await rename(moveSrc, trashDest);
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException).code !== "EXDEV") throw e;
+    await cp(moveSrc, trashDest, { recursive: true });
+    await rm(moveSrc, { recursive: true, force: true });
+  }
   invalidateSkillCache(existing.path);
   return { name: existing.name, trashedTo: trashDest };
 }

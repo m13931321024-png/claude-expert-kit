@@ -6,6 +6,7 @@ import {
   createSkill,
   deleteSkill,
   fetchSkillFromGitHub,
+  getGlobalSkillRoot,
   importSkillToDisk,
   loadAllSkills,
   toListItem,
@@ -36,7 +37,7 @@ function buildSources(projects: ProjectInfo[]): SkillSource[] {
       dirs: [
         join(HOME_DIR, ".claude/commands/experts"),
         join(HOME_DIR, ".claude/commands/_legacy"),
-        join(HOME_DIR, ".claude/skills"),
+        getGlobalSkillRoot(),
       ],
       defaultType: "expert",
     },
@@ -237,7 +238,7 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 }
 
 function buildAllowedRoots(projects: ProjectInfo[]): string[] {
-  const roots = [join(HOME_DIR, ".claude/skills")];
+  const roots = [getGlobalSkillRoot()];
   for (const p of projects) roots.push(join(p.root, ".claude/skills"));
   return roots;
 }
@@ -352,6 +353,8 @@ async function handleUpdateSkill(
     const msg = e instanceof Error ? e.message : "update_failed";
     if (msg === "not_writable" || msg === "not_writable_scope") {
       sendErr(res, 403, msg, existing.path);
+    } else if (msg === "not_found") {
+      sendErr(res, 404, "not_found", existing.path);
     } else {
       sendErr(res, 400, "update_failed", msg);
     }
