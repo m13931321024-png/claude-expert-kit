@@ -44,6 +44,27 @@ export function SkillsPage({ mode }: { mode: SkillsMode }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [collapsedExample, setCollapsedExample] = useState(true);
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("cek:collapsed-projects");
+      return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const toggleProject = (name: string) => {
+    setCollapsedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      try {
+        localStorage.setItem("cek:collapsed-projects", JSON.stringify([...next]));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   const scopes = MODE_SCOPES[mode];
   const allowedScopes = useMemo(() => new Set(scopes), [scopes]);
@@ -98,9 +119,17 @@ export function SkillsPage({ mode }: { mode: SkillsMode }) {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-xl font-semibold text-slate-900">{MODE_TITLE[mode]}</h1>
-        <p className="mt-1 text-sm text-slate-500">{MODE_HINT[mode]}</p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">{MODE_TITLE[mode]}</h1>
+          <p className="mt-1 text-sm text-slate-500">{MODE_HINT[mode]}</p>
+        </div>
+        <Link
+          to="/skills/new"
+          className="shrink-0 rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+        >
+          + New skill
+        </Link>
       </header>
 
       <div className="flex items-center gap-3">
@@ -126,6 +155,8 @@ export function SkillsPage({ mode }: { mode: SkillsMode }) {
           onToggle={
             scope === "example" ? () => setCollapsedExample((c) => !c) : undefined
           }
+          collapsedProjects={collapsedProjects}
+          onToggleProject={toggleProject}
         />
       ))}
 
@@ -167,11 +198,15 @@ function ScopeSection({
   skills,
   collapsed,
   onToggle,
+  collapsedProjects,
+  onToggleProject,
 }: {
   scope: SkillScope;
   skills: Skill[];
   collapsed: boolean;
   onToggle?: () => void;
+  collapsedProjects: Set<string>;
+  onToggleProject: (name: string) => void;
 }) {
   return (
     <section>
@@ -198,7 +233,11 @@ function ScopeSection({
             : "无内容"}
         </div>
       ) : scope === "project" ? (
-        <ProjectGroups skills={skills} />
+        <ProjectGroups
+          skills={skills}
+          collapsedProjects={collapsedProjects}
+          onToggleProject={onToggleProject}
+        />
       ) : (
         <div className="space-y-3">
           {TYPE_ORDER.map((t) => {
@@ -211,7 +250,15 @@ function ScopeSection({
   );
 }
 
-function ProjectGroups({ skills }: { skills: Skill[] }) {
+function ProjectGroups({
+  skills,
+  collapsedProjects,
+  onToggleProject,
+}: {
+  skills: Skill[];
+  collapsedProjects: Set<string>;
+  onToggleProject: (name: string) => void;
+}) {
   const byProject = new Map<string, Skill[]>();
   for (const s of skills) {
     const k = s.projectName ?? "(unknown)";
@@ -224,18 +271,29 @@ function ProjectGroups({ skills }: { skills: Skill[] }) {
     <div className="space-y-4">
       {names.map((name) => {
         const list = byProject.get(name) ?? [];
+        const collapsed = collapsedProjects.has(name);
         return (
           <div key={name} className="rounded border border-slate-200 bg-white p-3">
-            <div className="mb-2 flex items-baseline gap-2">
-              <span className="font-mono text-sm font-semibold text-slate-900">{name}</span>
-              <span className="text-xs text-slate-400">{list.length} skill</span>
-            </div>
-            <div className="space-y-2">
-              {TYPE_ORDER.map((t) => {
-                const sub = list.filter((s) => s.type === t);
-                return sub.length === 0 ? null : <TypeGroup key={t} type={t} skills={sub} />;
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={() => onToggleProject(name)}
+              className="mb-2 flex w-full items-baseline justify-between gap-2 text-left"
+              aria-expanded={!collapsed}
+            >
+              <span className="flex items-baseline gap-2">
+                <span className="font-mono text-sm font-semibold text-slate-900">{name}</span>
+                <span className="text-xs text-slate-400">{list.length} skill</span>
+              </span>
+              <span className="font-mono text-xs text-slate-400">{collapsed ? "▸" : "▾"}</span>
+            </button>
+            {collapsed ? null : (
+              <div className="space-y-2">
+                {TYPE_ORDER.map((t) => {
+                  const sub = list.filter((s) => s.type === t);
+                  return sub.length === 0 ? null : <TypeGroup key={t} type={t} skills={sub} />;
+                })}
+              </div>
+            )}
           </div>
         );
       })}

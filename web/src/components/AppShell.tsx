@@ -25,7 +25,7 @@ export function AppShell() {
             <span>Projects</span>
             <span
               className="rounded bg-slate-100 px-2 py-0.5 font-mono text-slate-700"
-              title={`config: ${health.configPath}`}
+              title={`auto-discovered from ~/workspace and ~/Desktop`}
             >
               {health.projectCount}
             </span>

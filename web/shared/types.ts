@@ -16,18 +16,13 @@ export interface Skill {
   description: string;
   keywords: string[];
   path: string;
+  writable: boolean;
 }
 
 export interface ProjectInfo {
   name: string;
   root: string;
-  pinned: boolean;
-  discovered: boolean;
   skillCount?: number;
-}
-
-export interface ProjectsConfig {
-  projects: ProjectInfo[];
 }
 
 export interface HealthInfo {
@@ -38,7 +33,6 @@ export interface HealthInfo {
   homeDir: string;
   projectName: string;
   projectCount: number;
-  configPath: string;
 }
 
 export interface SkillDetail extends Skill {
@@ -55,4 +49,35 @@ export interface SkillDetail extends Skill {
 export interface ApiError {
   error: string;
   detail?: string;
+}
+
+export type WritableScope = "global" | "project";
+
+export interface SkillCreateRequest {
+  name: string;
+  scope: WritableScope;
+  projectName?: string;
+  type: SkillType;
+  description: string;
+  keywords: string[];
+  body: string;
+}
+
+export interface SkillUpdateRequest {
+  description?: string;
+  keywords?: string[];
+  type?: SkillType;
+  body?: string;
+}
+
+export interface SkillWriteResult {
+  name: string;
+  path: string;
+  scope: WritableScope;
+  projectName?: string;
+}
+
+export interface SkillDeleteResult {
+  name: string;
+  trashedTo: string;
 }

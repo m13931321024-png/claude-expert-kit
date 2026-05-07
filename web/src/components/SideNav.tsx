@@ -2,8 +2,7 @@ import { NavLink } from "react-router-dom";
 
 const items = [
   { to: "/skills/global", label: "Global", desc: "全局 skill（机器级共享 + demo）" },
-  { to: "/skills/projects", label: "Project Skills", desc: "已挂载项目的 skill" },
-  { to: "/projects", label: "Projects", desc: "挂载 / 卸载 / pin 项目" },
+  { to: "/skills/projects", label: "Project Skills", desc: "项目 skill（按项目分组）" },
   { to: "/router", label: "Router", desc: "模拟 prompt 命中（M2）" },
   { to: "/run", label: "Run", desc: "跑 skillctl 命令（M3）" },
   { to: "/settings", label: "Settings", desc: "路径 / 端口 配置（M3）" },

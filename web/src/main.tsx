@@ -5,10 +5,10 @@ import "./index.css";
 import { AppShell } from "./components/AppShell";
 import { SkillsPage } from "./pages/SkillsPage";
 import { SkillDetailPage } from "./pages/SkillDetailPage";
+import { SkillFormPage } from "./pages/SkillFormPage";
 import { RouterPage } from "./pages/RouterPage";
 import { RunPage } from "./pages/RunPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { ProjectsPage } from "./pages/ProjectsPage";
 
 const router = createHashRouter([
   {
@@ -19,8 +19,9 @@ const router = createHashRouter([
       { path: "skills", element: <Navigate to="/skills/global" replace /> },
       { path: "skills/global", element: <SkillsPage mode="global" /> },
       { path: "skills/projects", element: <SkillsPage mode="projects" /> },
+      { path: "skills/new", element: <SkillFormPage mode="create" /> },
+      { path: "skills/:name/edit", element: <SkillFormPage mode="edit" /> },
       { path: "skills/:name", element: <SkillDetailPage /> },
-      { path: "projects", element: <ProjectsPage /> },
       { path: "router", element: <RouterPage /> },
       { path: "run", element: <RunPage /> },
       { path: "settings", element: <SettingsPage /> },

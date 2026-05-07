@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { SkillDetail } from "../../shared/types";
 
 export function SkillDetailPage() {
   const { name = "" } = useParams();
+  const navigate = useNavigate();
   const [skill, setSkill] = useState<SkillDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     setSkill(null);
@@ -15,6 +18,29 @@ export function SkillDetailPage() {
       setError(e instanceof Error ? e.message : String(e));
     });
   }, [name]);
+
+  const writable = skill !== null && skill.writable;
+
+  async function onDelete() {
+    if (!skill) return;
+    const ok = window.confirm(
+      `确认删除 ${skill.name}？\n` +
+        `路径: ${skill.path}\n` +
+        `将移到 ~/.skillctl/trash/<时间戳>/，可手动恢复。`,
+    );
+    if (!ok) return;
+    setDeleting(true);
+    setActionError(null);
+    try {
+      const result = await api.deleteSkill(skill.name);
+      window.alert(`已删除\n移到: ${result.trashedTo}`);
+      navigate(skill.scope === "project" ? "/skills/projects" : "/skills/global");
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (error) {
     return (
@@ -27,16 +53,40 @@ export function SkillDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Link to="/skills" className="text-sm text-slate-500 hover:text-slate-900">
           ← Skills
         </Link>
         <span className="font-mono text-base font-semibold text-slate-900">{skill.name}</span>
         <TypeBadge type={skill.type} />
         <ScopeBadge scope={skill.scope} />
+        {writable && (
+          <div className="ml-auto flex items-center gap-2">
+            <Link
+              to={`/skills/${encodeURIComponent(skill.name)}/edit`}
+              className="rounded border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              Edit
+            </Link>
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={deleting}
+              className="rounded border border-rose-300 bg-white px-2.5 py-1 text-xs text-rose-700 shadow-sm hover:bg-rose-50 disabled:opacity-50"
+            >
+              {deleting ? "删除中…" : "Delete"}
+            </button>
+          </div>
+        )}
       </div>
 
       <p className="text-sm text-slate-700">{skill.description}</p>
+
+      {actionError && (
+        <div className="rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          {actionError}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded border border-slate-200 bg-white">
         <Row label="priority" value={skill.priority} mono />
