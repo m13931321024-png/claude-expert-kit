@@ -5,6 +5,8 @@ import { homedir } from "node:os";
 import {
   createSkill,
   deleteSkill,
+  fetchSkillFromGitHub,
+  importSkillToDisk,
   loadAllSkills,
   toListItem,
   updateSkill,
@@ -178,6 +180,15 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return;
     }
     sendErr(res, 405, "method_not_allowed");
+    return;
+  }
+
+  if (pathname === "/api/skills/import") {
+    if (method !== "POST") {
+      sendErr(res, 405, "method_not_allowed");
+      return;
+    }
+    await handleImportSkill(req, res);
     return;
   }
 
@@ -365,6 +376,83 @@ async function handleDeleteSkill(res: ServerResponse, name: string): Promise<voi
       sendErr(res, 403, msg, existing.path);
     } else {
       sendErr(res, 400, "delete_failed", msg);
+    }
+  }
+}
+
+async function handleImportSkill(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  let body: unknown;
+  try {
+    body = await readJsonBody(req);
+  } catch (e: unknown) {
+    sendErr(res, 400, e instanceof Error ? e.message : "bad_body");
+    return;
+  }
+  if (!isObj(body)) {
+    sendErr(res, 400, "bad_body", "expected object");
+    return;
+  }
+  const url = getString(body, "url") ?? "";
+  if (url === "") {
+    sendErr(res, 400, "missing_url");
+    return;
+  }
+  const scope = getScope(body, "scope");
+  if (scope === undefined) {
+    sendErr(res, 400, "bad_scope", "scope must be 'global' or 'project'");
+    return;
+  }
+  const projectName = getString(body, "projectName");
+  const nameOverride = getString(body, "nameOverride");
+
+  let projectRoot: string | undefined;
+  let resolvedProjectName: string | undefined;
+  if (scope === "project") {
+    if (projectName === undefined || projectName === "") {
+      sendErr(res, 400, "missing_project_name");
+      return;
+    }
+    const projects = await loadProjects();
+    const proj = projects.find((p) => p.name === projectName);
+    if (!proj) {
+      sendErr(res, 404, "project_not_found", projectName);
+      return;
+    }
+    projectRoot = proj.root;
+    resolvedProjectName = proj.name;
+  }
+
+  let fetched;
+  try {
+    fetched = await fetchSkillFromGitHub(url);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "fetch_failed";
+    sendErr(res, 400, "fetch_failed", msg);
+    return;
+  }
+
+  const finalName = nameOverride !== undefined && nameOverride !== "" ? nameOverride : fetched.name;
+  const nameErr = validateSkillName(finalName);
+  if (nameErr !== null) {
+    sendErr(res, 400, "bad_name", `${nameErr} (after import: ${finalName})`);
+    return;
+  }
+
+  try {
+    const result = await importSkillToDisk(
+      fetched,
+      scope,
+      projectRoot,
+      resolvedProjectName,
+      nameOverride,
+    );
+    send(res, 201, result);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "import_failed";
+    if (msg === "already_exists") {
+      sendErr(res, 409, "already_exists", finalName);
+    } else {
+      sendErr(res, 400, "import_failed", msg);
     }
   }
 }

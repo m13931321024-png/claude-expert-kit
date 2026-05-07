@@ -81,3 +81,10 @@ export interface SkillDeleteResult {
   name: string;
   trashedTo: string;
 }
+
+export interface SkillImportRequest {
+  url: string;
+  scope: WritableScope;
+  projectName?: string;
+  nameOverride?: string;
+}

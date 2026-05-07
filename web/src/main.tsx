@@ -6,6 +6,7 @@ import { AppShell } from "./components/AppShell";
 import { SkillsPage } from "./pages/SkillsPage";
 import { SkillDetailPage } from "./pages/SkillDetailPage";
 import { SkillFormPage } from "./pages/SkillFormPage";
+import { SkillImportPage } from "./pages/SkillImportPage";
 import { RouterPage } from "./pages/RouterPage";
 import { RunPage } from "./pages/RunPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -20,6 +21,7 @@ const router = createHashRouter([
       { path: "skills/global", element: <SkillsPage mode="global" /> },
       { path: "skills/projects", element: <SkillsPage mode="projects" /> },
       { path: "skills/new", element: <SkillFormPage mode="create" /> },
+      { path: "skills/import", element: <SkillImportPage /> },
       { path: "skills/:name/edit", element: <SkillFormPage mode="edit" /> },
       { path: "skills/:name", element: <SkillDetailPage /> },
       { path: "router", element: <RouterPage /> },

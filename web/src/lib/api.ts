@@ -5,6 +5,7 @@ import type {
   SkillCreateRequest,
   SkillDeleteResult,
   SkillDetail,
+  SkillImportRequest,
   SkillUpdateRequest,
   SkillWriteResult,
 } from "../../shared/types";
@@ -33,6 +34,8 @@ export const api = {
   getSkill: (name: string) => jsonFetch<SkillDetail>(`/api/skills/${encodeURIComponent(name)}`),
   createSkill: (req: SkillCreateRequest) =>
     jsonFetch<SkillWriteResult>("/api/skills", jsonBody(req)),
+  importSkill: (req: SkillImportRequest) =>
+    jsonFetch<SkillWriteResult>("/api/skills/import", jsonBody(req)),
   updateSkill: (name: string, req: SkillUpdateRequest) =>
     jsonFetch<SkillWriteResult>(`/api/skills/${encodeURIComponent(name)}`, {
       ...jsonBody(req),

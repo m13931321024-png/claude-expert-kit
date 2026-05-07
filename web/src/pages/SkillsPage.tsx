@@ -124,12 +124,20 @@ export function SkillsPage({ mode }: { mode: SkillsMode }) {
           <h1 className="text-xl font-semibold text-slate-900">{MODE_TITLE[mode]}</h1>
           <p className="mt-1 text-sm text-slate-500">{MODE_HINT[mode]}</p>
         </div>
-        <Link
-          to="/skills/new"
-          className="shrink-0 rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-        >
-          + New skill
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            to="/skills/import"
+            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            ↓ Import from GitHub
+          </Link>
+          <Link
+            to="/skills/new"
+            className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+          >
+            + New skill
+          </Link>
+        </div>
       </header>
 
       <div className="flex items-center gap-3">

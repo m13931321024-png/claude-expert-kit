@@ -259,62 +259,68 @@ export function resolveSkillDir(
   return { dir, file: join(dir, "SKILL.md") };
 }
 
-interface FrontmatterFields {
-  name: string;
-  type: SkillType;
-  description: string;
-  keywords: string[];
-}
-
-function buildFrontmatterYaml(fm: FrontmatterFields): string {
-  const lines = [
-    `name: ${fm.name}`,
-    `type: ${fm.type}`,
-    `description: ${yaml.dump(fm.description, { lineWidth: -1 }).trim()}`,
-  ];
-  if (fm.keywords.length > 0) {
-    lines.push(`keywords: ${yaml.dump(fm.keywords, { flowLevel: 0 }).trim()}`);
-  } else {
-    lines.push("keywords: []");
-  }
-  return lines.join("\n");
-}
-
-export function serializeSkillFile(fm: FrontmatterFields, body: string): string {
-  const yamlBlock = buildFrontmatterYaml(fm);
+export function serializeSkillFile(meta: Record<string, unknown>, body: string): string {
+  const yamlStr = yaml
+    .dump(meta, { lineWidth: -1, noRefs: true, flowLevel: 1 })
+    .trimEnd();
   const trimmedBody = body.replace(/^\s+/, "").replace(/\s+$/, "");
-  return `---\n${yamlBlock}\n---\n\n${trimmedBody}\n`;
+  return `---\n${yamlStr}\n---\n\n${trimmedBody}\n`;
 }
 
-async function pathExists(p: string): Promise<boolean> {
-  try {
-    await stat(p);
-    return true;
-  } catch {
-    return false;
+async function writeSkillToDisk(
+  name: string,
+  scope: WritableScope,
+  projectRoot: string | undefined,
+  content: string,
+): Promise<{ dir: string; file: string }> {
+  const nameErr = validateSkillName(name);
+  if (nameErr !== null) throw new Error(`bad_name: ${nameErr}`);
+  if (scope === "project" && projectRoot === undefined) {
+    throw new Error("missing_project_root");
   }
+  const { dir, file } = resolveSkillDir(name, scope, projectRoot);
+  await mkdir(dir, { recursive: true });
+  try {
+    await writeFile(file, content, { encoding: "utf8", flag: "wx" });
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException).code === "EEXIST") throw new Error("already_exists");
+    throw e;
+  }
+  invalidateSkillCache(file);
+  return { dir, file };
 }
 
 export async function createSkill(
   req: SkillCreateRequest,
   projectRoot: string | undefined,
 ): Promise<SkillWriteResult> {
-  const nameErr = validateSkillName(req.name);
-  if (nameErr !== null) throw new Error(`bad_name: ${nameErr}`);
-  if (req.scope === "project" && projectRoot === undefined) {
-    throw new Error("missing_project_root");
-  }
-  const { dir, file } = resolveSkillDir(req.name, req.scope, projectRoot);
-  if (await pathExists(file)) throw new Error("already_exists");
-  await mkdir(dir, { recursive: true });
-  const content = serializeSkillFile(
-    { name: req.name, type: req.type, description: req.description, keywords: req.keywords },
-    req.body,
-  );
-  await writeFile(file, content, "utf8");
-  invalidateSkillCache(file);
+  const meta: Record<string, unknown> = {
+    name: req.name,
+    type: req.type,
+    description: req.description,
+    keywords: req.keywords,
+  };
+  const content = serializeSkillFile(meta, req.body);
+  const { file } = await writeSkillToDisk(req.name, req.scope, projectRoot, content);
   const out: SkillWriteResult = { name: req.name, path: file, scope: req.scope };
   if (req.projectName !== undefined) out.projectName = req.projectName;
+  return out;
+}
+
+export async function importSkillToDisk(
+  fetched: FetchedSkill,
+  scope: WritableScope,
+  projectRoot: string | undefined,
+  projectName: string | undefined,
+  nameOverride: string | undefined,
+): Promise<SkillWriteResult> {
+  const finalName =
+    nameOverride !== undefined && nameOverride !== "" ? nameOverride : fetched.name;
+  const meta: Record<string, unknown> = { ...fetched.rawMeta, name: finalName };
+  const content = serializeSkillFile(meta, fetched.body);
+  const { file } = await writeSkillToDisk(finalName, scope, projectRoot, content);
+  const out: SkillWriteResult = { name: finalName, path: file, scope };
+  if (projectName !== undefined) out.projectName = projectName;
   return out;
 }
 
@@ -328,14 +334,17 @@ export async function updateSkill(
   }
   const allowed = allowedRoots.some((r) => isUnder(existing.path, r));
   if (!allowed) throw new Error("not_writable");
-  const fm: FrontmatterFields = {
-    name: existing.name,
-    type: req.type ?? existing.type,
-    description: req.description ?? existing.description,
-    keywords: req.keywords ?? existing.keywords,
-  };
+  const parsedFM = parseFrontmatter(existing.raw);
+  const baseMeta: Record<string, unknown> =
+    parsedFM && typeof parsedFM.meta === "object" && parsedFM.meta !== null
+      ? { ...(parsedFM.meta as Record<string, unknown>) }
+      : {};
+  baseMeta.name = existing.name;
+  if (req.type !== undefined) baseMeta.type = req.type;
+  if (req.description !== undefined) baseMeta.description = req.description;
+  if (req.keywords !== undefined) baseMeta.keywords = req.keywords;
   const body = req.body ?? existing.body;
-  const content = serializeSkillFile(fm, body);
+  const content = serializeSkillFile(baseMeta, body);
   await writeFile(existing.path, content, "utf8");
   invalidateSkillCache(existing.path);
   const out: SkillWriteResult = {
@@ -350,10 +359,116 @@ export async function updateSkill(
 function tsStamp(): string {
   const d = new Date();
   const pad = (n: number, w = 2) => String(n).padStart(w, "0");
+  const ms = String(d.getMilliseconds()).padStart(3, "0");
+  const rand = Math.random().toString(36).slice(2, 6);
   return (
     `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-` +
-    `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+    `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}-${ms}-${rand}`
   );
+}
+
+const GITHUB_HOSTS = new Set(["github.com", "raw.githubusercontent.com"]);
+const MAX_GITHUB_REDIRECTS = 3;
+const MAX_GITHUB_BODY_BYTES = 64 * 1024;
+const GITHUB_FETCH_TIMEOUT_MS = 10_000;
+
+function rewriteBlobToRaw(parsed: URL): URL {
+  if (parsed.hostname !== "github.com") return parsed;
+  const m = /^\/([^/]+)\/([^/]+)\/blob\/(.+)$/.exec(parsed.pathname);
+  if (!m) return parsed;
+  const next = new URL(parsed.toString());
+  next.hostname = "raw.githubusercontent.com";
+  next.pathname = `/${m[1]}/${m[2]}/${m[3]}`;
+  return next;
+}
+
+export interface FetchedSkill {
+  name: string;
+  type: SkillType;
+  description: string;
+  keywords: string[];
+  body: string;
+  finalUrl: string;
+  rawMeta: Record<string, unknown>;
+}
+
+export async function fetchSkillFromGitHub(rawUrl: string): Promise<FetchedSkill> {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error("bad_url");
+  }
+  if (url.protocol !== "https:") throw new Error("bad_url: must be https");
+  if (!GITHUB_HOSTS.has(url.hostname)) throw new Error("bad_host: not github");
+  url = rewriteBlobToRaw(url);
+  if (!GITHUB_HOSTS.has(url.hostname)) throw new Error("bad_host: not github");
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GITHUB_FETCH_TIMEOUT_MS);
+  try {
+    let current = url;
+    for (let hop = 0; hop <= MAX_GITHUB_REDIRECTS; hop++) {
+      if (!GITHUB_HOSTS.has(current.hostname)) throw new Error("bad_host: redirect off-allowlist");
+      const res = await fetch(current.toString(), {
+        redirect: "manual",
+        signal: controller.signal,
+        headers: { Accept: "text/plain, text/markdown, */*" },
+      });
+      if (res.status >= 300 && res.status < 400) {
+        const loc = res.headers.get("location");
+        if (loc === null) throw new Error("redirect_no_location");
+        current = new URL(loc, current);
+        continue;
+      }
+      if (!res.ok) throw new Error(`fetch_failed: HTTP ${res.status}`);
+
+      const cl = res.headers.get("content-length");
+      if (cl !== null && Number(cl) > MAX_GITHUB_BODY_BYTES) {
+        throw new Error("body_too_large");
+      }
+      const text = await readBoundedText(res, MAX_GITHUB_BODY_BYTES);
+      const parsed = parseFrontmatter(text);
+      if (!parsed) throw new Error("not_a_skill: no frontmatter");
+      const meta = parsed.meta;
+      const name = asString(meta.name);
+      if (!name) throw new Error("not_a_skill: missing frontmatter.name");
+      const type = asTypeOrNull(meta.type) ?? "tool";
+      const description = asString(meta.description);
+      const keywords = keywordsFromMeta(meta);
+      return {
+        name,
+        type,
+        description,
+        keywords,
+        body: parsed.body,
+        finalUrl: current.toString(),
+        rawMeta: meta as Record<string, unknown>,
+      };
+    }
+    throw new Error("too_many_redirects");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function readBoundedText(res: Response, limit: number): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value === undefined) continue;
+    total += value.length;
+    if (total > limit) {
+      void reader.cancel();
+      throw new Error("body_too_large");
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 export async function deleteSkill(
